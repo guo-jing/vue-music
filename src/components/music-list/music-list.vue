@@ -1,16 +1,23 @@
 <template>
     <div class="music-list">
-        <div class="back">
+        <div
+          class="back"
+          @click="goBack">
             <i class="icon-back"></i>
         </div>
         <h1 class="title">{{ title }}</h1>
         <div
           class="bg-image"
           :style="bgImageStyle"
+          ref="bgImage"
         >
           <div class="filter"></div>
         </div>
-        <scroll class="list">
+        <scroll
+          class="list"
+          :style="scrollStyle"
+          v-loading="loading"
+        >
             <div class="song-list-wrapper">
                 <song-list :songs="songs"></song-list>
             </div>
@@ -36,13 +43,32 @@
                 }
             },
             title: String,
-            pic: String
+            pic: String,
+            loading: Boolean
+        },
+        data() {
+            return {
+                imageHeight: 0
+            }
         },
         computed: {
             bgImageStyle() {
                 return {
                     backgroundImage: `url(${this.pic})`
                 }
+            },
+            scrollStyle() {
+                return {
+                    top: `${this.imageHeight}px`
+                }
+            }
+        },
+        mounted() {
+            this.imageHeight = this.$refs.bgImage.clientHeight
+        },
+        methods: {
+            goBack() {
+                this.$router.back()
             }
         }
     }
@@ -83,6 +109,8 @@
       width: 100%;
       transform-origin: top;
       background-size: cover;
+      padding-top: 70%;
+      height: 0;
       .play-btn-wrapper {
         position: absolute;
         bottom: 20px;
