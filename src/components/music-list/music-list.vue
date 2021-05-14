@@ -11,12 +11,18 @@
           :style="bgImageStyle"
           ref="bgImage"
         >
-          <div class="filter"></div>
+          <div
+           class="filter"
+           :style="filterStyle"
+          >
+          </div>
         </div>
         <scroll
           class="list"
           :style="scrollStyle"
           v-loading="loading"
+          :probe-type="3"
+          @scroll="onScroll"
         >
             <div class="song-list-wrapper">
                 <song-list :songs="songs"></song-list>
@@ -28,6 +34,8 @@
 <script>
     import SongList from '@/components/base/song-list/song-list'
     import Scroll from '@/components/base/scroll/scroll.vue'
+
+    const RESERVED_HEIGHT = 40
 
     export default {
         name: 'music-list',
@@ -48,27 +56,66 @@
         },
         data() {
             return {
-                imageHeight: 0
+                imageHeight: 0,
+                scrollY: 0,
+                maxTranslateY: 0
             }
         },
         computed: {
             bgImageStyle() {
+                const scrollY = this.scrollY
+                let zIndex = 0
+                let paddingTop = '70%'
+                let height = 0
+                let translateZ = 0
+
+                if (scrollY > this.maxTranslateY) {
+                    zIndex = 10
+                    paddingTop = 0
+                    height = `${RESERVED_HEIGHT}px`
+                    translateZ = 1
+                }
+
+                let scale = 1
+                if (scrollY < 0) {
+                    scale = 1 + Math.abs(scrollY / this.imageHeight)
+                }
+
                 return {
-                    backgroundImage: `url(${this.pic})`
+                    zIndex,
+                    paddingTop,
+                    height,
+                    backgroundImage: `url(${this.pic})`,
+                    transform: `scale(${scale}) translateZ(${translateZ}px)`
                 }
             },
             scrollStyle() {
                 return {
                     top: `${this.imageHeight}px`
                 }
+            },
+            filterStyle() {
+                let blur = 0
+                const scrollY = this.scrollY
+                const imageHeight = this.imageHeight
+                if (scrollY >= 0) {
+                    blur = Math.min(this.maxTranslateY / imageHeight, scrollY / imageHeight) * 20
+                }
+                return {
+                    backdropFilter: `blur(${blur}px)`
+                }
             }
         },
         mounted() {
             this.imageHeight = this.$refs.bgImage.clientHeight
+            this.maxTranslateY = this.imageHeight - RESERVED_HEIGHT
         },
         methods: {
             goBack() {
                 this.$router.back()
+            },
+            onScroll(pos) {
+              this.scrollY = -pos.y
             }
         }
     }
@@ -109,8 +156,6 @@
       width: 100%;
       transform-origin: top;
       background-size: cover;
-      padding-top: 70%;
-      height: 0;
       .play-btn-wrapper {
         position: absolute;
         bottom: 20px;
