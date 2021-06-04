@@ -31,7 +31,30 @@
                                 :src="currentSong.pic">
                         </div>
                     </div>
+                    <div class="playing-lyric-wrapper">
+                        <div class="playing-lyric">{{ playingLyric }}</div>
+                    </div>
                 </div>
+                <scroll
+                    class="middle-r"
+                    ref="lyricScrollRef"
+                >
+                    <div class="lyric-wrapper">
+                        <div v-if="currentLyric" ref="lyricListRef">
+                            <p
+                                class="text"
+                                :class="{'current': currentLineNum === index}"
+                                v-for="(line, index) in currentLyric.lines"
+                                :key="line.num"
+                            >
+                                {{ line.txt }}
+                            </p>
+                        </div>
+                        <div class="pure-music" v-show="pureMusicLyric">
+                            <p>{{ pureMusicLyric }}</p>
+                        </div>
+                    </div>
+                </scroll>
             </div>
             <div class="bottom">
                 <div class="progress-wrapper">
@@ -81,6 +104,8 @@ import { computed, watch, ref } from 'vue'
 import useMode from './use-mode'
 import useFavorite from './use-favorite'
 import useCD from './use-cd'
+import useLyric from './use-lyric'
+import Scroll from '@/components/base/scroll/scroll'
 import ProgressBar from './progress-bar'
 import { formatTime } from '@/assets/js/util'
 import { PLAY_MODE } from '@/assets/js/constant'
@@ -88,7 +113,8 @@ import { PLAY_MODE } from '@/assets/js/constant'
 export default {
     name: 'player',
     components: {
-        ProgressBar
+        ProgressBar,
+        Scroll
     },
     setup() {
         // data
@@ -109,6 +135,7 @@ export default {
         const { modeIcon, changeMode } = useMode()
         const { getFavoriteIcon, toggleFavorite } = useFavorite()
         const { cdCls, cdRef, cdImageRef } = useCD()
+        const { currentLyric, currentLineNum, pureMusicLyric, playingLyric, lyricScrollRef, lyricListRef, playLyric, stopLyric } = useLyric({ songReady, currentTime })
 
         // computed
         const playlist = computed(() => store.state.playlist)
@@ -138,7 +165,13 @@ export default {
         watch(playing, (newPlaying) => {
             if (!songReady.value) return
             const audioEl = audioRef.value
-            newPlaying ? audioEl.play() : audioEl.pause()
+            if (newPlaying) {
+                audioEl.play()
+                playLyric()
+            } else {
+                audioEl.pause()
+                stopLyric()
+            }
         })
 
         // methods
@@ -204,6 +237,7 @@ export default {
 
         function ready() {
             songReady.value = true
+            playLyric()
         }
 
         function error() {
@@ -219,6 +253,8 @@ export default {
         function onProgressChanging(progress) {
             progressChanging = true
             currentTime.value = currentSong.value.duration * progress
+            playLyric()
+            stopLyric()
         }
 
         function onProgressChanged(progress) {
@@ -227,6 +263,7 @@ export default {
             if (!playing.value) {
                 store.commit('setPlayingState', true)
             }
+            playLyric()
         }
 
         function end() {
@@ -267,7 +304,14 @@ export default {
             // cd
             cdCls,
             cdRef,
-            cdImageRef
+            cdImageRef,
+            // lyric
+            currentLyric,
+            currentLineNum,
+            pureMusicLyric,
+            playingLyric,
+            lyricScrollRef,
+            lyricListRef
         }
     }
 }
