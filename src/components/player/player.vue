@@ -17,8 +17,15 @@
                 <h1 class="title">{{ currentSong.name }}</h1>
                 <h1 class="subtitle">{{ currentSong.singer }}</h1>
             </div>
-            <div class="middle">
-                <div class="middle-l">
+            <div class="middle"
+                 @touchstart.prevent="onMiddleTouchStart"
+                 @touchmove.prevent="onMiddleTouchMove"
+                 @touchend.prevent="onMiddleTouchEnd"
+            >
+                <div
+                    class="middle-l"
+                    :style="middleLStyle"
+                >
                     <div class="cd-wrapper">
                         <div
                             ref="cdRef"
@@ -38,6 +45,7 @@
                 <scroll
                     class="middle-r"
                     ref="lyricScrollRef"
+                    :style="middleRStyle"
                 >
                     <div class="lyric-wrapper">
                         <div v-if="currentLyric" ref="lyricListRef">
@@ -57,6 +65,10 @@
                 </scroll>
             </div>
             <div class="bottom">
+                <div class="dot-wrapper">
+                    <span class="dot" :class="{'active': currentShow === 'cd'}"></span>
+                    <span class="dot" :class="{'active': currentShow === 'lyric'}"></span>
+                </div>
                 <div class="progress-wrapper">
                     <span class="time time-l">{{ formatTime(currentTime) }}</span>
                     <div class="progress-bar-wrapper">
@@ -105,6 +117,7 @@ import useMode from './use-mode'
 import useFavorite from './use-favorite'
 import useCD from './use-cd'
 import useLyric from './use-lyric'
+import useMiddleInteractive from './use-middle-interactive'
 import Scroll from '@/components/base/scroll/scroll'
 import ProgressBar from './progress-bar'
 import { formatTime } from '@/assets/js/util'
@@ -136,6 +149,7 @@ export default {
         const { getFavoriteIcon, toggleFavorite } = useFavorite()
         const { cdCls, cdRef, cdImageRef } = useCD()
         const { currentLyric, currentLineNum, pureMusicLyric, playingLyric, lyricScrollRef, lyricListRef, playLyric, stopLyric } = useLyric({ songReady, currentTime })
+        const { currentShow, middleLStyle, middleRStyle, onMiddleTouchStart, onMiddleTouchMove, onMiddleTouchEnd } = useMiddleInteractive()
 
         // computed
         const playlist = computed(() => store.state.playlist)
@@ -311,7 +325,14 @@ export default {
             pureMusicLyric,
             playingLyric,
             lyricScrollRef,
-            lyricListRef
+            lyricListRef,
+            // middle-interactive
+            currentShow,
+            middleLStyle,
+            middleRStyle,
+            onMiddleTouchStart,
+            onMiddleTouchMove,
+            onMiddleTouchEnd
         }
     }
 }
