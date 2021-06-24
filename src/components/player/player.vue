@@ -1,5 +1,8 @@
 <template>
-    <div class="player">
+    <div
+        class="player"
+        v-show="playlist.length"
+    >
         <div
             class="normal-player"
             v-show="fullScreen"
@@ -73,6 +76,7 @@
                     <span class="time time-l">{{ formatTime(currentTime) }}</span>
                     <div class="progress-bar-wrapper">
                         <progress-bar
+                            ref="barRef"
                             :progress="progress"
                             @progress-changing="onProgressChanging"
                             @progress-changed="onProgressChanged"
@@ -99,6 +103,10 @@
                 </div>
             </div>
         </div>
+        <mini-player
+            :progress="progress"
+            :toggle-play="togglePlay"
+        ></mini-player>
         <audio
             ref="audioRef"
             @pause="pause"
@@ -112,12 +120,13 @@
 
 <script>
 import { useStore } from 'vuex'
-import { computed, watch, ref } from 'vue'
+import { computed, watch, ref, nextTick } from 'vue'
 import useMode from './use-mode'
 import useFavorite from './use-favorite'
 import useCD from './use-cd'
 import useLyric from './use-lyric'
 import useMiddleInteractive from './use-middle-interactive'
+import MiniPlayer from './mini-player'
 import Scroll from '@/components/base/scroll/scroll'
 import ProgressBar from './progress-bar'
 import { formatTime } from '@/assets/js/util'
@@ -126,12 +135,14 @@ import { PLAY_MODE } from '@/assets/js/constant'
 export default {
     name: 'player',
     components: {
+        MiniPlayer,
         ProgressBar,
         Scroll
     },
     setup() {
         // data
         const audioRef = ref(null)
+        const barRef = ref(null)
         const songReady = ref(false)
         const currentTime = ref(0)
         let progressChanging = false
@@ -185,6 +196,13 @@ export default {
             } else {
                 audioEl.pause()
                 stopLyric()
+            }
+        })
+
+        watch(fullScreen, async (newFullScreen) => {
+            if (newFullScreen) {
+                await nextTick()
+                barRef.value.setOffset(progress.value)
             }
         })
 
@@ -291,9 +309,11 @@ export default {
 
         return {
             audioRef,
+            barRef,
             fullScreen,
             currentTime,
             currentSong,
+            playlist,
             playIcon,
             disableCls,
             progress,
