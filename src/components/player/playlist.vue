@@ -12,7 +12,7 @@
               <i
                 class="icon"
                 :class="modeIcon"
-                @click.stop="changeMode"
+                @click="changeMode"
               >
               </i>
               <span class="text">{{modeText}}</span>
@@ -78,7 +78,8 @@
 
 <script>
     import Scroll from '@/components/base/scroll/scroll'
-    import { ref, computed, nextTick } from 'vue'
+    import Confirm from '@/components/base/confirm/confirm'
+    import { ref, computed, nextTick, watch } from 'vue'
     import { useStore } from 'vuex'
     import useMode from './use-mode'
     import useFavorite from './use-favorite'
@@ -86,11 +87,15 @@
     export default {
         name: 'playlist',
         components: {
-            Scroll
+            Scroll,
+            Confirm
         },
         setup() {
             const visible = ref(false)
+            const removing = ref(false)
             const scrollRef = ref(null)
+            const listRef = ref(null)
+            const confirmRef = ref(null)
 
             const store = useStore()
             const playlist = computed(() => store.state.playlist)
@@ -99,6 +104,14 @@
 
             const { modeIcon, modeText, changeMode } = useMode()
             const { getFavoriteIcon, toggleFavorite } = useFavorite()
+
+            watch(currentSong, async (newSong) => {
+                if (!visible.value || !newSong.id) {
+                    return
+                }
+                await nextTick()
+                scrollToCurrent()
+            })
 
             function getCurrentIcon(song) {
                 if (song.id === currentSong.value.id) {
@@ -111,24 +124,74 @@
 
                 await nextTick()
                 refreshScroll()
+                scrollToCurrent()
             }
 
             function hide() {
                 visible.value = false
             }
 
+            function selectItem(song) {
+                const index = playlist.value.findIndex(item => {
+                    return song.id === item.id
+                })
+
+                store.commit('setCurrentIndex', index)
+                store.commit('setPlayingState', true)
+            }
+
             function refreshScroll() {
                 scrollRef.value.scroll.refresh()
             }
 
+            function scrollToCurrent() {
+                const index = sequenceList.value.findIndex(song => {
+                    return currentSong.value.id === song.id
+                })
+                if (index === -1) {
+                    return
+                }
+                const target = listRef.value.$el.children[index]
+
+                scrollRef.value.scroll.scrollToElement(target, 300)
+            }
+
+            function removeSong(song) {
+                if (removing.value) return
+                removing.value = true
+                store.dispatch('removeSong', song)
+                if (!playlist.value.length) {
+                    hide()
+                }
+                setTimeout(() => {
+                    removing.value = false
+                }, 300)
+            }
+
+            function showConfirm() {
+                confirmRef.value.show()
+            }
+
+            function confirmClear() {
+                store.dispatch('clearSongList')
+                hide()
+            }
+
             return {
                 visible,
+                removing,
                 scrollRef,
+                listRef,
+                confirmRef,
                 playlist,
                 sequenceList,
                 getCurrentIcon,
                 show,
                 hide,
+                selectItem,
+                removeSong,
+                showConfirm,
+                confirmClear,
                 // mode
                 modeIcon,
                 modeText,
