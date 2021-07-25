@@ -70,7 +70,6 @@
           text="是否清空播放列表？"
           confirm-btn-text="清空"
         ></confirm>
-        <add-song ref="addSongRef"></add-song>
       </div>
     </transition>
   </teleport>
